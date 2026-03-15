@@ -116,7 +116,7 @@ openclaw cron add \
 
 RETRIEVE:
 Run: mkdir -p projects/crucible-<id>/retrieved
-Run: sshpass -p \"$MAC_MINI_PW\" scp -r administrator@REDACTED_IP:~/crucible-<id>/* projects/crucible-<id>/retrieved/
+Run: sshpass -p \"$MAC_MINI_PW\" scp -r administrator@$MAC_MINI_IP:~/crucible-<id>/* projects/crucible-<id>/retrieved/
 
 CHECK COMPLETION:
 If debate.py is still running (ps aux | grep debate.py), wait 30 min and re-check.
@@ -186,7 +186,7 @@ Best debates use different model FAMILIES for genuine reasoning diversity:
 
 ## Mac Mini Setup
 
-- **Host:** `REDACTED_IP`, user: `administrator`, auth: `$MAC_MINI_PW` env var
+- **Host:** `$MAC_MINI_IP`, user: `administrator`, auth: `$MAC_MINI_PW` env var
 - **Hardware:** M4 Pro, 64GB RAM — fits 2x 32B models comfortably, or 1x 70B + 1x 32B
 - **Ollama:** `/opt/homebrew/bin/ollama` (must be in PATH for SSH commands)
 - **Python:** 3.9 with `requests` installed
@@ -203,7 +203,7 @@ Best debates use different model FAMILIES for genuine reasoning diversity:
 
 ### To Pull New Models
 ```bash
-sshpass -p "$MAC_MINI_PW" ssh administrator@REDACTED_IP \
+sshpass -p "$MAC_MINI_PW" ssh administrator@$MAC_MINI_IP \
   'export PATH=$PATH:/opt/homebrew/bin && ollama pull <model>'
 ```
 
@@ -309,7 +309,7 @@ Mac Mini debate completes
 If the auto-pipeline fails, manually synthesize and publish:
 ```bash
 # 1. Pull results from Mac Mini
-scp -r administrator@REDACTED_IP:~/crucible/results/<dir>/ /tmp/debate/
+scp -r administrator@$MAC_MINI_IP:~/crucible/results/<dir>/ /tmp/debate/
 # 2. Read final positions, write synthesis JSON
 # 3. Publish
 curl -X POST https://<YOUR_DOMAIN>/api/debates/publish \

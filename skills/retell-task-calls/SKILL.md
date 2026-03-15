@@ -26,7 +26,7 @@ Make one-off phone calls for specific tasks using Retell AI's built-in LLM (fast
 
 ## Environment
 
-- **From number:** REDACTED_PHONE (Retell-native)
+- **From number:** $RETELL_FROM_NUMBER (Retell-native)
 - **Agent ID:** Created on-demand (task-specific)
 - **Model:** Retell LLM (built-in, fast)
 - **Cost:** ~$0.07-0.08/min (Retell) + international rates
@@ -35,7 +35,7 @@ Make one-off phone calls for specific tasks using Retell AI's built-in LLM (fast
 
 **Required in Retell Dashboard:**
 1. Default agent exists for templating
-2. Phone number REDACTED_PHONE assigned
+2. Phone number $RETELL_FROM_NUMBER assigned
 
 **Required in `~/.openclaw/.env`:**
 ```bash

@@ -5,7 +5,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RETELL_API_KEY="${RETELL_API_KEY:-$(grep RETELL_API_KEY ~/.openclaw/.env | cut -d= -f2)}"
-FROM_NUMBER="REDACTED_PHONE"
+FROM_NUMBER="${RETELL_FROM_NUMBER:-}"
 
 if [ $# -lt 4 ]; then
   echo "Usage: $0 <task_name> <to_number> <language_code> <prompt_text> [cleanup:yes/no]"
