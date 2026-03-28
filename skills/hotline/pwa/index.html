@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#dc2626">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Hotline — Mr. Bernard</title>
+  <link rel="manifest" href="/hotline/manifest.json">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0a0a0a;
+      color: #fff;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    #app {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    #status {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      right: 20px;
+      text-align: center;
+      font-size: 14px;
+      color: #666;
+      transition: color 0.3s;
+    }
+
+    #status.active {
+      color: #dc2626;
+    }
+
+    #location {
+      position: absolute;
+      top: 50px;
+      left: 20px;
+      right: 20px;
+      text-align: center;
+      font-size: 12px;
+      color: #444;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    #location.visible {
+      opacity: 1;
+    }
+
+    #button-container {
+      position: relative;
+      width: 280px;
+      height: 280px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #button {
+      width: 240px;
+      height: 240px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #dc2626, #991b1b);
+      border: 4px solid #dc2626;
+      box-shadow: 0 0 40px rgba(220, 38, 38, 0.3),
+                  0 0 80px rgba(220, 38, 38, 0.1),
+                  inset 0 0 40px rgba(0, 0, 0, 0.3);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: rgba(255, 255, 255, 0.9);
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+
+    #button:active {
+      transform: scale(0.95);
+    }
+
+    #button.idle {
+      animation: idle-pulse 3s ease-in-out infinite;
+    }
+
+    #button.recording {
+      animation: recording-pulse 0.8s ease-in-out infinite;
+      background: radial-gradient(circle at 30% 30%, #ef4444, #dc2626);
+      box-shadow: 0 0 60px rgba(220, 38, 38, 0.6),
+                  0 0 120px rgba(220, 38, 38, 0.3),
+                  inset 0 0 40px rgba(0, 0, 0, 0.3);
+    }
+
+    #button.sending {
+      background: radial-gradient(circle at 30% 30%, #f59e0b, #d97706);
+      border-color: #f59e0b;
+      box-shadow: 0 0 40px rgba(245, 158, 11, 0.3);
+    }
+
+    #button.sent {
+      background: radial-gradient(circle at 30% 30%, #10b981, #059669);
+      border-color: #10b981;
+      box-shadow: 0 0 40px rgba(16, 185, 129, 0.3);
+      animation: success-pulse 0.5s ease-out;
+    }
+
+    #button.error {
+      background: radial-gradient(circle at 30% 30%, #7f1d1d, #450a0a);
+      border-color: #7f1d1d;
+      animation: shake 0.5s ease;
+    }
+
+    @keyframes idle-pulse {
+      0%, 100% { box-shadow: 0 0 40px rgba(220, 38, 38, 0.3), 0 0 80px rgba(220, 38, 38, 0.1); }
+      50% { box-shadow: 0 0 50px rgba(220, 38, 38, 0.4), 0 0 100px rgba(220, 38, 38, 0.2); }
+    }
+
+    @keyframes recording-pulse {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 60px rgba(220, 38, 38, 0.6), 0 0 120px rgba(220, 38, 38, 0.3); }
+      50% { transform: scale(1.05); box-shadow: 0 0 80px rgba(220, 38, 38, 0.8), 0 0 160px rgba(220, 38, 38, 0.4); }
+    }
+
+    @keyframes success-pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-10px); }
+      75% { transform: translateX(10px); }
+    }
+
+    #timer {
+      font-size: 24px;
+      font-weight: 700;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    #timer.visible {
+      opacity: 1;
+    }
+
+    #waveform {
+      position: absolute;
+      bottom: 80px;
+      left: 0;
+      right: 0;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    #waveform.visible {
+      opacity: 1;
+    }
+
+    .wave-bar {
+      width: 4px;
+      background: #dc2626;
+      border-radius: 2px;
+      transition: height 0.1s;
+    }
+
+    #error-msg {
+      position: absolute;
+      bottom: 40px;
+      left: 20px;
+      right: 20px;
+      text-align: center;
+      color: #ef4444;
+      font-size: 14px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    #error-msg.visible {
+      opacity: 1;
+    }
+
+    .checkmark {
+      font-size: 80px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .checkmark.visible {
+      opacity: 1;
+    }
+
+    .spinner {
+      border: 4px solid rgba(255, 255, 255, 0.1);
+      border-top: 4px solid #fff;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      animation: spin 1s linear infinite;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .spinner.visible {
+      opacity: 1;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div id="status">Hold to talk</div>
+    <div id="location"></div>
+    
+    <div id="button-container">
+      <div id="button" class="idle">
+        <span id="timer"></span>
+        <div class="spinner"></div>
+        <div class="checkmark">✓</div>
+      </div>
+    </div>
+
+    <div id="waveform"></div>
+    <div id="error-msg"></div>
+  </div>
+
+  <script>
+    // Service worker registration
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/hotline/sw.js').catch(err => {
+        console.error('SW registration failed:', err);
+      });
+    }
+
+    // Auth key from URL or localStorage
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlKey = urlParams.get('key');
+    if (urlKey) {
+      localStorage.setItem('hotline_key', urlKey);
+      // Clean URL
+      window.history.replaceState({}, document.title, '/hotline/');
+    }
+    const apiKey = localStorage.getItem('hotline_key');
+
+    if (!apiKey) {
+      document.getElementById('status').textContent = 'No API key. Add ?key=YOUR_KEY to URL';
+      document.getElementById('status').style.color = '#ef4444';
+    }
+
+    // State
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let startTime = 0;
+    let timerInterval = null;
+    let audioContext = null;
+    let analyser = null;
+    let location = null;
+    let isRecording = false;
+    let isSending = false;
+
+    const button = document.getElementById('button');
+    const timer = document.getElementById('timer');
+    const status = document.getElementById('status');
+    const locationEl = document.getElementById('location');
+    const waveform = document.getElementById('waveform');
+    const errorMsg = document.getElementById('error-msg');
+    const spinner = button.querySelector('.spinner');
+    const checkmark = button.querySelector('.checkmark');
+
+    // Create waveform bars
+    for (let i = 0; i < 20; i++) {
+      const bar = document.createElement('div');
+      bar.className = 'wave-bar';
+      bar.style.height = '4px';
+      waveform.appendChild(bar);
+    }
+    const waveBars = waveform.querySelectorAll('.wave-bar');
+
+    function showError(msg) {
+      errorMsg.textContent = msg;
+      errorMsg.classList.add('visible');
+      button.classList.remove('idle', 'recording', 'sending', 'sent');
+      button.classList.add('error');
+      setTimeout(() => {
+        errorMsg.classList.remove('visible');
+        button.classList.remove('error');
+        button.classList.add('idle');
+      }, 3000);
+    }
+
+    function updateTimer() {
+      const elapsed = (Date.now() - startTime) / 1000;
+      const mins = Math.floor(elapsed / 60);
+      const secs = Math.floor(elapsed % 60);
+      timer.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function animateWaveform() {
+      if (!analyser || !isRecording) return;
+      
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      analyser.getByteFrequencyData(dataArray);
+      
+      waveBars.forEach((bar, i) => {
+        const index = Math.floor(i * dataArray.length / waveBars.length);
+        const value = dataArray[index] || 0;
+        const height = Math.max(4, (value / 255) * 50);
+        bar.style.height = `${height}px`;
+      });
+      
+      if (isRecording) {
+        requestAnimationFrame(animateWaveform);
+      }
+    }
+
+    async function startRecording() {
+      if (!apiKey || isRecording || isSending) return;
+
+      try {
+        // Request mic permission
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        // Setup audio analysis
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioContext.createAnalyser();
+        const source = audioContext.createMediaStreamSource(stream);
+        source.connect(analyser);
+        analyser.fftSize = 256;
+
+        // Start recording
+        mediaRecorder = new MediaRecorder(stream, {
+          mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
+            ? 'audio/webm;codecs=opus' 
+            : 'audio/webm'
+        });
+        
+        audioChunks = [];
+        mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+        mediaRecorder.onstop = sendRecording;
+        
+        mediaRecorder.start();
+        isRecording = true;
+        startTime = Date.now();
+        
+        // UI updates
+        button.classList.remove('idle', 'sent', 'error');
+        button.classList.add('recording');
+        timer.classList.add('visible');
+        waveform.classList.add('visible');
+        status.textContent = 'Recording...';
+        status.classList.add('active');
+        
+        timerInterval = setInterval(updateTimer, 100);
+        animateWaveform();
+        
+        // Haptic feedback
+        if (navigator.vibrate) navigator.vibrate(50);
+        
+        // Get location
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            pos => {
+              location = {
+                lat: pos.coords.latitude,
+                lng: pos.coords.longitude,
+                accuracy: pos.coords.accuracy,
+                timestamp: pos.timestamp
+              };
+              locationEl.textContent = `📍 ±${Math.round(pos.coords.accuracy)}m`;
+              locationEl.classList.add('visible');
+            },
+            err => {
+              console.warn('Location error:', err);
+              locationEl.textContent = '📍 Location unavailable';
+              locationEl.classList.add('visible');
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+          );
+        }
+      } catch (err) {
+        console.error('Recording start error:', err);
+        showError(err.name === 'NotAllowedError' ? 'Mic permission denied' : 'Could not start recording');
+      }
+    }
+
+    function stopRecording() {
+      if (!isRecording) return;
+      
+      isRecording = false;
+      clearInterval(timerInterval);
+      
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+        mediaRecorder.stream.getTracks().forEach(track => track.stop());
+      }
+      
+      if (audioContext) {
+        audioContext.close();
+        audioContext = null;
+      }
+      
+      // UI updates
+      waveform.classList.remove('visible');
+      locationEl.classList.remove('visible');
+      
+      // Haptic feedback
+      if (navigator.vibrate) navigator.vibrate([50, 100, 50]);
+    }
+
+    async function sendRecording() {
+      if (isSending) return;
+      
+      isSending = true;
+      const duration = (Date.now() - startTime) / 1000;
+      
+      button.classList.remove('recording');
+      button.classList.add('sending');
+      timer.classList.remove('visible');
+      spinner.classList.add('visible');
+      status.textContent = 'Sending...';
+      
+      try {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        const formData = new FormData();
+        formData.append('audio', audioBlob, 'hotline.webm');
+        formData.append('duration', duration.toFixed(1));
+        if (location) {
+          formData.append('location', JSON.stringify(location));
+        }
+        
+        const response = await fetch('/api/hotline', {
+          method: 'POST',
+          headers: { 'X-API-Key': apiKey },
+          body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+          spinner.classList.remove('visible');
+          checkmark.classList.add('visible');
+          button.classList.remove('sending');
+          button.classList.add('sent');
+          status.textContent = 'Sent!';
+          status.classList.remove('active');
+          
+          setTimeout(() => {
+            checkmark.classList.remove('visible');
+            button.classList.remove('sent');
+            button.classList.add('idle');
+            status.textContent = 'Hold to talk';
+            timer.textContent = '';
+            isSending = false;
+          }, 2000);
+        } else {
+          throw new Error(result.error || 'Send failed');
+        }
+      } catch (err) {
+        console.error('Send error:', err);
+        spinner.classList.remove('visible');
+        isSending = false;
+        showError(err.message || 'Failed to send');
+        status.textContent = 'Hold to talk';
+        status.classList.remove('active');
+      }
+      
+      // Cleanup
+      audioChunks = [];
+      location = null;
+    }
+
+    // Button event handlers
+    button.addEventListener('mousedown', e => {
+      e.preventDefault();
+      startRecording();
+    });
+
+    button.addEventListener('mouseup', e => {
+      e.preventDefault();
+      stopRecording();
+    });
+
+    button.addEventListener('mouseleave', e => {
+      if (isRecording) {
+        e.preventDefault();
+        stopRecording();
+      }
+    });
+
+    button.addEventListener('touchstart', e => {
+      e.preventDefault();
+      startRecording();
+    });
+
+    button.addEventListener('touchend', e => {
+      e.preventDefault();
+      stopRecording();
+    });
+
+    button.addEventListener('touchcancel', e => {
+      if (isRecording) {
+        e.preventDefault();
+        stopRecording();
+      }
+    });
+
+    // Prevent context menu
+    button.addEventListener('contextmenu', e => e.preventDefault());
+  </script>
+</body>
+</html>

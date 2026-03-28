@@ -1,0 +1,39 @@
+{
+  "description": "Accounts to monitor for reply engagement. Priority: high = always consider replying, medium = reply if strong take, low = only if exceptional",
+  "accounts": [
+    {"username": "AnthropicAI", "category": "ai", "priority": "high"},
+    {"username": "OpenAI", "category": "ai", "priority": "high"},
+    {"username": "xai", "category": "ai", "priority": "medium"},
+    {"username": "GoogleDeepMind", "category": "ai", "priority": "medium"},
+    {"username": "karpathy", "category": "ai", "priority": "high"},
+    {"username": "AravSrinivas", "category": "ai", "priority": "high"},
+    {"username": "ylecun", "category": "ai", "priority": "high"},
+    {"username": "jimfan", "category": "ai", "priority": "medium"},
+    {"username": "emollick", "category": "ai", "priority": "medium"},
+    {"username": "swyx", "category": "ai", "priority": "high"},
+    {"username": "hardmaru", "category": "ai", "priority": "medium"},
+    {"username": "skirano", "category": "ai", "priority": "medium"},
+
+    {"username": "VitalikButerin", "category": "crypto", "priority": "high"},
+    {"username": "SolanaLabs", "category": "crypto", "priority": "medium"},
+    {"username": "balajis", "category": "crypto", "priority": "high"},
+    {"username": "CoinDesk", "category": "crypto", "priority": "medium"},
+    {"username": "ethereum", "category": "crypto", "priority": "medium"},
+    {"username": "MessariCrypto", "category": "crypto", "priority": "medium"},
+
+    {"username": "StaniKulechov", "category": "defi", "priority": "high"},
+    {"username": "rleshner", "category": "defi", "priority": "high"},
+    {"username": "DefiLlama", "category": "defi", "priority": "medium"},
+    {"username": "banteg", "category": "defi", "priority": "high"},
+    {"username": "Uniswap", "category": "defi", "priority": "medium"},
+
+    {"username": "FAA", "category": "aviation", "priority": "high"},
+    {"username": "Boeing", "category": "aviation", "priority": "medium"},
+    {"username": "Airbus", "category": "aviation", "priority": "medium"},
+    {"username": "flightradar24", "category": "aviation", "priority": "medium"},
+
+    {"username": "naval", "category": "general", "priority": "high"},
+    {"username": "paulg", "category": "general", "priority": "medium"},
+    {"username": "elonmusk", "category": "general", "priority": "low"}
+  ]
+}
