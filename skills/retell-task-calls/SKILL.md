@@ -126,18 +126,18 @@ IMPORTANT:
 ```
 You are Mr. Bernard calling Staples about a mail scanning request.
 
-YOUR GOAL: Get them to process the pending iPostal scan request for mailbox 1041.
+YOUR GOAL: Get them to process the pending iPostal scan request for mailbox [REDACTED].
 
 BACKGROUND INFO (use only if asked):
 - Customer name: John Smith
-- Mailbox number: 1041
+- Mailbox number: [REDACTED]
 - The scan request is already in the iPostal1 system
 - Customer is traveling internationally
 
 HOW TO HAVE THE CONVERSATION:
 1. When someone answers, say: "Hi, this is Mr. Bernard, I'm calling about an iPostal mailbox."
    Then STOP and wait for them to respond.
-2. When they acknowledge, say: "I have a pending scan request for mailbox 1041 under John Smith. Could you process that today?"
+2. When they acknowledge, say: "I have a pending scan request for mailbox [REDACTED] under John Smith. Could you process that today?"
    Then STOP and wait.
 3. If they need more info, tell them the request is already in the iPostal system.
 4. If they confirm, say: "Great, thank you so much. Have a good day."
@@ -155,7 +155,7 @@ IMPORTANT:
 ❌ **Stage directions in brackets** — `[Brief pause]` gets spoken or included literally
 ❌ **Numbered "Line 1, Line 2, Line 3"** — agent treats it as a sequential script to dump
 ❌ **"Say ONLY what is written below"** — makes agent robotic, not conversational
-❌ **Long introductions** — "Hi, this is Mr. Bernard calling on behalf of John Smith, mailbox 1041, regarding iPostal1 mail services" → too long for one breath
+❌ **Long introductions** — "Hi, this is Mr. Bernard calling on behalf of John Smith, mailbox [REDACTED], regarding iPostal1 mail services" → too long for one breath
 ❌ **Combining intro + problem + ask** — always split into separate turns
 
 ### What Works
@@ -185,7 +185,7 @@ After call completes:
 ### Staples CDA — iPostal Rescan (March 20-21, 2026)
 - **Phone:** (555) 555-0123
 - **IVR:** Press 2 for iPostal services
-- **Box:** 1041, customer John Smith
+- **Box:** [REDACTED], customer John Smith
 - **v1-v3:** Monologue problem — agent dumped full script without pausing
 - **v4:** Still monologued but shorter. Paul heard request, hung up. Message likely delivered.
 - **Key learning:** Numbered lines and stage directions cause monologuing. Use conversational prompt template instead.
