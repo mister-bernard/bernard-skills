@@ -75,8 +75,9 @@ OPENCLAW_GATEWAY_URL=http://127.0.0.1:18789
 OPENCLAW_GATEWAY_TOKEN=your_gateway_token
 OPENCLAW_AGENT_ID=main
 
-# Telegram (for code forwarding)
+# Telegram (for verification-code forwarding)
 TELEGRAM_BOT_TOKEN=your_bot_token
+TELEGRAM_FORWARD_CHAT_ID=your_chat_id   # required for code forwarding
 EOF
 ```
 
@@ -97,7 +98,7 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=/home/openclaw/telnyx-sms-service
+WorkingDirectory=%h/telnyx-sms-service
 ExecStart=/usr/bin/env node server.js
 Restart=always
 RestartSec=3
@@ -131,10 +132,8 @@ if (/verif|code|otp|one.time/i.test(text) && /\d{4,8}/.test(text)) {
 ```
 
 ### Customize Target
-Change the Telegram chat_id in server.js:
-```javascript
-body: JSON.stringify({ chat_id: "YOUR_CHAT_ID", text: tgMsg, parse_mode: "Markdown" })
-```
+Set `TELEGRAM_FORWARD_CHAT_ID` in your `.env`. The handler reads it at
+runtime — no source edits needed.
 
 ### Telegram Message Format
 Codes are formatted with backticks for easy tap-to-copy:
@@ -169,6 +168,7 @@ All credentials in `.env`:
 - `TELNYX_PUBLIC_KEY` — Webhook signature verification
 - `OPENCLAW_GATEWAY_TOKEN` — Gateway auth
 - `TELEGRAM_BOT_TOKEN` — Code forwarding
+- `TELEGRAM_FORWARD_CHAT_ID` — Where verification codes land
 
 ## Cost
 

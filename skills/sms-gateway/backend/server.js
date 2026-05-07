@@ -156,18 +156,21 @@ app.post("/webhook", async (req, res) => {
 
   log(`SMS from ${from} → ${to}: ${text.slice(0, 80)}...`);
 
-  // Auto-forward verification codes directly to G on Telegram
+  // Auto-forward verification codes directly to operator on Telegram
   if (/verif|code|otp|one.time/i.test(text) && /\d{4,8}/.test(text)) {
     try {
       const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-      if (TELEGRAM_TOKEN) {
+      const TELEGRAM_FORWARD_CHAT_ID = process.env.TELEGRAM_FORWARD_CHAT_ID;
+      if (TELEGRAM_TOKEN && TELEGRAM_FORWARD_CHAT_ID) {
         const tgMsg = `📲 SMS verification code received\nFrom: \`${from}\`\n\n\`${text}\``;
         await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ chat_id: "YOUR_TELEGRAM_CHAT_ID", text: tgMsg, parse_mode: "Markdown" })
+          body: JSON.stringify({ chat_id: TELEGRAM_FORWARD_CHAT_ID, text: tgMsg, parse_mode: "Markdown" })
         });
         log(`Forwarded verification code to Telegram`);
+      } else if (!TELEGRAM_FORWARD_CHAT_ID) {
+        log(`Verification code detected but TELEGRAM_FORWARD_CHAT_ID not set — skipping forward`);
       }
     } catch (tgErr) {
       log(`Failed to forward verification code to Telegram: ${tgErr.message}`);

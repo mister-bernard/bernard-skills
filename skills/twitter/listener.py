@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 """
 Twitter Listener v2 — Polls watchlist accounts, scores for reply-worthiness,
-wakes Bernard to craft replies. Also generates a daily digest of interesting
-tweets for content inspiration.
+wakes the operator agent to craft replies. Also generates a daily digest of
+interesting tweets for content inspiration.
 
 Usage: python3 skills/twitter/listener.py [--dry-run] [--digest]
 
 Cron: */30 * * * * (every 30 min)
-State: skills/twitter/listener-state.json
+State: skills/twitter/listener-state.json (operator-private; gitignored).
+       Start from listener-state.example.json.
+Watchlist: skills/twitter/watchlist.json (operator-private; gitignored).
+       Start from watchlist.example.json.
 """
 
 import json, os, sys, time, subprocess, urllib.request, urllib.parse, urllib.error, re
@@ -17,9 +20,12 @@ from datetime import datetime, timezone
 SKILL_DIR = Path(__file__).parent
 STATE_FILE = SKILL_DIR / "listener-state.json"
 WATCHLIST_FILE = SKILL_DIR / "watchlist.json"
-ENV_FILE = Path.home() / ".openclaw" / ".env"
-OPENCLAW = "/home/openclaw/.npm-global/bin/openclaw"
-DIGEST_FILE = Path.home() / ".openclaw" / "workspace" / "projects" / "twitter-strategy" / "daily-digest.md"
+ENV_FILE = Path(os.environ.get("OPENCLAW_ENV_FILE", str(Path.home() / ".openclaw" / ".env")))
+OPENCLAW = os.environ.get("OPENCLAW_BIN_PATH", "openclaw")
+DIGEST_FILE = Path(os.environ.get(
+    "TWITTER_DIGEST_FILE",
+    str(Path.home() / ".openclaw" / "workspace" / "projects" / "twitter-strategy" / "daily-digest.md"),
+))
 
 DRY_RUN = "--dry-run" in sys.argv
 DIGEST_MODE = "--digest" in sys.argv
@@ -88,7 +94,7 @@ def load_watchlist():
 def api_get(url, bearer_token):
     req = urllib.request.Request(url, headers={
         "Authorization": f"Bearer {bearer_token}",
-        "User-Agent": "MrBernard/1.0"
+        "User-Agent": os.environ.get("TWITTER_USER_AGENT", "BernardSkills/1.0")
     })
     try:
         with urllib.request.urlopen(req) as resp:
@@ -215,7 +221,7 @@ def format_digest(top_tweets):
     return "\n".join(lines)
 
 def wake_openclaw(tweets_for_reply):
-    """Send curated tweets to OpenClaw for Bernard to reply to."""
+    """Send curated tweets to the OpenClaw agent to reply to."""
     if not tweets_for_reply:
         return
     
@@ -275,7 +281,7 @@ def wake_openclaw(tweets_for_reply):
             capture_output=True, text=True, timeout=180
         )
         if result.returncode == 0 and "choices" in result.stdout:
-            print(f"  ✅ Sent {len(tweets_for_reply)} tweets to Bernard")
+            print(f"  ✅ Sent {len(tweets_for_reply)} tweets to the agent")
         else:
             print(f"  ❌ API call failed: {result.stdout[:200]}", file=sys.stderr)
     except Exception as e:

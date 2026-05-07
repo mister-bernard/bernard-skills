@@ -1,6 +1,6 @@
 # Hotline — Voice Command Interface
 
-**Push-to-talk voice hotline system** that transcribes audio and routes it to the agent for processing. Enables voice commands from anywhere with instant agent responses via Telegram.
+**Push-to-talk voice hotline system** that transcribes audio and routes it to your OpenClaw agent. Enables voice commands from anywhere with instant agent responses via Telegram (or any other configured channel).
 
 ## What It Does
 
@@ -69,7 +69,7 @@ Response delivered to Telegram
 
 ### Step 1: Install Dependencies
 ```bash
-cd ~/mrb-sh  # or your Express server directory
+cd /path/to/your-express-server
 npm install formidable form-data
 ```
 
@@ -95,15 +95,17 @@ app.post('/api/hotline', hotlineHandler);
 app.post('/voice', hotlineHandler);
 ```
 
-Update the agent delivery command with your:
-- Agent ID (e.g., `opus-dm`)
-- Reply channel (e.g., `telegram`)
-- Target chat ID (e.g., `YOUR_TELEGRAM_CHAT_ID`)
+Configure via env vars:
+- `HOTLINE_AGENT_ID` — OpenClaw agent id (default: `opus-dm`)
+- `HOTLINE_REPLY_CHANNEL` — delivery channel (default: `telegram`)
+- `HOTLINE_REPLY_TARGET` — target chat / address id (required)
+- `HOTLINE_RATE_LIMIT_MS` — per-key cooldown ms (default: 5000)
+- `OPENCLAW_BIN_PATH` — full path to `openclaw` if not on PATH
 
 ### Step 4: Deploy PWA
 ```bash
-# Copy PWA files to public directory
-cp -r pwa/* ~/mrb-sh/public/hotline/
+# Copy PWA files to your Express server's public directory
+cp -r pwa/* /path/to/your-express-server/public/hotline/
 
 # Add to protected paths in server.js
 protected_prefixes: ['/hotline']
@@ -130,7 +132,7 @@ protected_prefixes: ['/hotline']
 ### Step 6: Test
 ```bash
 # Tail logs
-journalctl --user -u mrb-sh -f | grep Hotline
+journalctl --user -u <your-service> -f | grep Hotline
 
 # Send test via curl
 curl -X POST https://your-domain.com/voice \
@@ -211,10 +213,10 @@ When credits depleted:
 ### Logs
 ```bash
 # Watch hotline activity
-journalctl --user -u mrb-sh -f | grep -E "Hotline|Agent"
+journalctl --user -u <your-service> -f | grep -E "Hotline|Agent"
 
 # Check transcription errors
-journalctl --user -u mrb-sh --since today | grep "Deepgram API error"
+journalctl --user -u <your-service> --since today | grep "Deepgram API error"
 ```
 
 ## Troubleshooting
@@ -224,8 +226,8 @@ journalctl --user -u mrb-sh --since today | grep "Deepgram API error"
 - Backend should see `audio/x-m4a` or `audio/webm` (not multipart)
 
 ### "Agent error: /bin/sh: openclaw: not found"
-- Use full path: `/home/openclaw/.npm-global/bin/openclaw`
-- Set PATH in exec env: `/home/openclaw/.npm-global/bin:/usr/local/bin:/usr/bin:/bin`
+- Set `OPENCLAW_BIN_PATH=/full/path/to/openclaw` in `.env`
+- Or add openclaw's directory to the service's PATH
 
 ### Timeout after 30 seconds
 - Use `exec()` not `execSync()` for async fire-and-forget

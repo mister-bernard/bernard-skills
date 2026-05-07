@@ -27,16 +27,19 @@ Make one-off phone calls for specific tasks using Retell AI's built-in LLM with 
 
 ## Environment
 
-- **From number:** +1XXXXXXXXXX (Retell-native)
+- **From number:** Set via `RETELL_FROM_NUMBER` env var (Retell-native)
+- **Operator name:** Set via `OPERATOR_NAME` env var (used in agent self-introduction)
 - **Agent ID:** Created on-demand (task-specific)
 - **Model:** Always use Retell's built-in LLM (`"model": "gpt-4o-mini"` in create-retell-llm)
 - **Cost:** ~$0.07-0.08/min (Retell) + international rates
 
 ## Configuration
 
-**Required in `~/.openclaw/.env`:**
+**Required in `~/.openclaw/.env` (or `$OPENCLAW_ENV_FILE`):**
 ```bash
 RETELL_API_KEY=YOUR_RETELL_API_KEY
+RETELL_FROM_NUMBER=+1XXXXXXXXXX
+OPERATOR_NAME=Your Name        # appears in agent's self-intro
 ```
 
 ## Call Creation Procedure
@@ -63,7 +66,7 @@ Note: `ambient_sound` must be one of: coffee-shop, convention-hall, summer-outdo
 curl -X POST "https://api.retellai.com/v2/create-phone-call" \
   -H "Authorization: Bearer $RETELL_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"from_number":"+1XXXXXXXXXX","to_number":"<number>","override_agent_id":"<agent_id>"}'
+  -d "{\"from_number\":\"$RETELL_FROM_NUMBER\",\"to_number\":\"<number>\",\"override_agent_id\":\"<agent_id>\"}"
 ```
 
 ### Step 4: Check status (wait ~2-3 min)
@@ -124,20 +127,20 @@ IMPORTANT:
 
 ### Example: iPostal Scan Request (What Works)
 ```
-You are Mr. Bernard calling Staples about a mail scanning request.
+You are <OPERATOR_NAME> calling <STORE_NAME> about a mail scanning request.
 
-YOUR GOAL: Get them to process the pending iPostal scan request for mailbox [REDACTED].
+YOUR GOAL: Get them to process the pending iPostal scan request for mailbox <BOX_NUMBER>.
 
 BACKGROUND INFO (use only if asked):
-- Customer name: John Smith
-- Mailbox number: [REDACTED]
+- Customer name: <CUSTOMER_NAME>
+- Mailbox number: <BOX_NUMBER>
 - The scan request is already in the iPostal1 system
 - Customer is traveling internationally
 
 HOW TO HAVE THE CONVERSATION:
-1. When someone answers, say: "Hi, this is Mr. Bernard, I'm calling about an iPostal mailbox."
+1. When someone answers, say: "Hi, this is <OPERATOR_NAME>, I'm calling about an iPostal mailbox."
    Then STOP and wait for them to respond.
-2. When they acknowledge, say: "I have a pending scan request for mailbox [REDACTED] under John Smith. Could you process that today?"
+2. When they acknowledge, say: "I have a pending scan request for mailbox <BOX_NUMBER> under <CUSTOMER_NAME>. Could you process that today?"
    Then STOP and wait.
 3. If they need more info, tell them the request is already in the iPostal system.
 4. If they confirm, say: "Great, thank you so much. Have a good day."
@@ -155,11 +158,11 @@ IMPORTANT:
 ❌ **Stage directions in brackets** — `[Brief pause]` gets spoken or included literally
 ❌ **Numbered "Line 1, Line 2, Line 3"** — agent treats it as a sequential script to dump
 ❌ **"Say ONLY what is written below"** — makes agent robotic, not conversational
-❌ **Long introductions** — "Hi, this is Mr. Bernard calling on behalf of John Smith, mailbox [REDACTED], regarding iPostal1 mail services" → too long for one breath
+❌ **Long introductions** — "Hi, this is <OPERATOR> calling on behalf of <CUSTOMER>, mailbox <BOX>, regarding iPostal1 mail services" → too long for one breath
 ❌ **Combining intro + problem + ask** — always split into separate turns
 
 ### What Works
-✅ **Short opening** — "Hi, this is Mr. Bernard, I'm calling about [topic]"
+✅ **Short opening** — "Hi, this is <OPERATOR>, I'm calling about [topic]"
 ✅ **Wait instructions** — "Then STOP and wait for them to respond"
 ✅ **Background info section** — details available IF asked, not volunteered upfront
 ✅ **Natural dialogue flow** — model it as a conversation, not a presentation
@@ -180,17 +183,16 @@ After call completes:
 3. Summarize result for user
 4. Optionally: delete one-time agent to keep dashboard clean
 
-## Call History
+## Lessons learned
 
-### Staples CDA — iPostal Rescan (March 20-21, 2026)
-- **Phone:** (555) 555-0123
-- **IVR:** Press 2 for iPostal services
-- **Box:** [REDACTED], customer John Smith
-- **v1-v3:** Monologue problem — agent dumped full script without pausing
-- **v4:** Still monologued but shorter. Paul heard request, hung up. Message likely delivered.
-- **Key learning:** Numbered lines and stage directions cause monologuing. Use conversational prompt template instead.
-- **Existing agent IDs:** `agent_EXAMPLE_ID` (v4), `agent_EXAMPLE_ID` (v3)
-- **Existing LLM IDs:** `llm_EXAMPLE_ID` (v4), `llm_EXAMPLE_ID` (v3)
+- **Monologuing is the #1 failure mode.** Numbered lines and stage
+  directions in the prompt cause the agent to dump the entire script in
+  one breath. Use the conversational template (one short turn at a
+  time, explicit STOP-and-wait instructions).
+- **Voicemail vs live answer:** the agent doesn't reliably distinguish
+  the two. Include a short voicemail fallback at the end of the prompt.
+- **IVR menus:** keep silent during the greeting, then clearly say the
+  menu choice. Worth scripting explicitly.
 
 ## Notes
 

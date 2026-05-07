@@ -1,21 +1,31 @@
-# Twitter/X Skill — @mrb_signal
+# Twitter / X Skill
 
-Post, read, reply, follow, and engage on Twitter as Mr. Bernard.
+Post, read, reply, follow, and engage on X (formerly Twitter) from an OpenClaw agent.
 
-## Account
-- Handle: `@mrb_signal`
-- User ID: `2027171957880549376`
-- Tier: Basic ($200/mo) — writes are cheap, reads burn credits fast
-- First post: 2026-02-27
+## Account configuration
 
-## Env Vars (in `~/.openclaw/.env`)
-- `X_CONSUMER_KEY` — API Key (app)
-- `X_COMSUMER_SECRET` — API Secret ⚠️ **Typo is permanent — it's COMSUMER in .env**
-- `X_ACCESS_TOKEN` — User access token (Read+Write)
-- `X_TOKEN_SECRET` — User access token secret
-- `X_BEARER_TOKEN` — App bearer token (read-only endpoints)
+This skill operates as whichever X account you've put in your `.env`. The
+example operator runs it as `@mrb_signal` (Basic tier, $200/mo); fork it,
+swap in your own keys, and it runs as your handle.
 
-## CLI Tools
+## Env vars (default file: `~/.openclaw/.env`)
+
+Override the file location with `OPENCLAW_ENV_FILE=/path/to/.env`.
+
+| Var | Purpose |
+|---|---|
+| `X_CONSUMER_KEY` | API Key (app) |
+| `X_COMSUMER_SECRET` | API Secret. ⚠️ **The typo is permanent — it's `COMSUMER` everywhere** |
+| `X_ACCESS_TOKEN` | User access token (Read+Write) |
+| `X_TOKEN_SECRET` | User access token secret |
+| `X_BEARER_TOKEN` | App bearer token (read-only endpoints) |
+| `X_USER_ID` | Numeric user id of the account (used for own-timeline reads, follow target) |
+| `X_USERNAME` | Handle without `@` (used for building tweet URLs) |
+
+`X_USER_ID` and `X_USERNAME` can also be passed inline as shell env vars
+without putting them in the .env file.
+
+## CLI tools
 
 ### Post a tweet
 ```bash
@@ -43,82 +53,41 @@ bash skills/twitter/follow.sh <username>
 bash skills/twitter/batch-follow.sh [--dry-run]
 ```
 
-## Listener (Automated Engagement) — ⚠️ DISABLED 2026-03-15
+## Watchlist + listener
 
-**Script:** `skills/twitter/listener.py` (script preserved, cron removed)
-**Status:** DISABLED to save API credits. Do NOT re-enable without G's approval.
-**Log:** `/tmp/twitter-listener.log`
-**State:** `skills/twitter/listener-state.json`
+`watchlist.example.json` ships with a generic 30-account starter list
+(AI, crypto, aviation, general). Copy it to `watchlist.json` (gitignored)
+and curate to your interests.
 
-### Why disabled
-- Basic tier credits are overwhelmingly consumed by READ operations, not writes
-- 30 watchlist accounts × polling every 30 min = ~1,440 API reads/day — this burned through the spend cap
-- Posting (writes) is cheap; reading timelines is expensive
-- Spend cap was hit on 2026-03-15 and reset by G
+`listener.py` polls watchlist accounts, scores each tweet for
+reply-worthiness, and forwards the top opportunities to your OpenClaw
+agent (via `openclaw chat`) to draft replies.
 
-### How engagement should work now
-- **Writing/posting:** Continue using the API (`tweet.sh`, `reply.sh`) — writes are cheap
-- **Reading/engagement:** Use RSS feeds, manual browsing, or Nitter — NOT API polling
-- Do NOT re-enable automated timeline polling unless tier is upgraded or G explicitly approves
+State is persisted in `listener-state.json` (gitignored — start from
+`listener-state.example.json`).
 
-### How the listener worked (for reference):
-1. Polls watchlist accounts for new tweets (up to 10 accounts/run, rotates by priority)
-2. Scores each tweet for reply-worthiness (priority, category, engagement, content signals)
-3. Picks top 5 opportunities per cycle
-4. Sends them to Bernard (via `openclaw chat`) to craft replies
-5. Bernard replies using `reply.sh`, skips anything without a genuinely good take
+### Listener env vars
 
-### Watchlist
-**File:** `skills/twitter/watchlist.json`
+| Var | Purpose |
+|---|---|
+| `OPENCLAW_BIN_PATH` | Full path to `openclaw` binary (default: `openclaw`) |
+| `TWITTER_DIGEST_FILE` | Where to write the daily-digest markdown |
+| `TWITTER_USER_AGENT` | UA string sent on read calls |
 
-Categories: ai, crypto, defi, aviation, general
-Priorities: high (always consider), medium (strong take only), low (exceptional only)
+### Cost reality (operator note)
+On Basic tier, polling 30 accounts every 30 min burned through the spend
+cap in two weeks — reads are far more expensive than writes. The example
+operator disabled the listener on 2026-03-15 and switched to RSS / Nitter
+for ingestion, while continuing to use this skill for posting and
+manual replies. If you re-enable, watch your read quota.
 
-Currently tracking 30 accounts across all categories.
+## Technical notes
 
-To add an account:
-```bash
-# Edit watchlist.json, then follow them:
-bash skills/twitter/follow.sh <username>
-```
-
-## Content Strategy
-
-Full plan: `projects/twitter-strategy/content-plan.md`
-
-### Pillars (4)
-| Pillar | Share | Topics |
-|--------|-------|--------|
-| AI/Agents | 40% | Operational war stories, contrarian takes, real practitioner signal |
-| Markets/DeFi | 25% | Protocol analysis, risk frameworks, macro without degen energy |
-| Aviation/Hardware | 20% | Edge computing, radio, physical infra meets AI |
-| Bernard (persona) | 15% | One-liners, grandfather quotes, late-night musings |
-
-### Voice Rules
-- Short: 1-2 sentences for most tweets
-- Substantive: every reply must add value
-- Never sycophantic: no "great take!", no "this 🔥"
-- Contrarian > agreeable: say what others won't
-- Silent > mediocre: skip if you don't have a real take
-
-### Posting cadence — 5 slots/day
-| Slot | Pacific | UTC | Focus |
-|------|---------|-----|-------|
-| Morning insight | 08:00 | 15:00 | Lessons learned |
-| Midday take | 11:00 | 18:00 | Capabilities showcase |
-| Afternoon substance | 14:00 | 21:00 | Imagination / threads |
-| Evening engagement | 17:00 | 00:00 | Helpful / repos / tips |
-| Night cap | 20:00 | 03:00 | Wild card / Bernard persona |
-
-### Content bank
-**File:** `projects/twitter-strategy/content-bank.md`
-Pre-written ideas across all 4 categories. Agent picks from unchecked items, marks them done after posting. Refresh regularly with new material from daily work.
-
-## Technical Notes
 - **Must use `--http1.1`** for curl to api.x.com — HTTP/2 breaks
 - OAuth 1.0a via Python `requests_oauthlib` for write operations
 - Bearer token for read-only endpoints
 - If app permissions change → must regenerate Access Token + Secret
 - Rate limits: be courteous, sleep between batch operations
-- **Thread posting**: Space out replies by 3-40 seconds between each post (`sleep $((RANDOM % 38 + 3))` between calls). Never rapid-fire a thread.
-- Basic tier: 280 char limit per tweet. Longer takes require threading (yarn style — reply to yourself).
+- **Thread posting**: space replies by 3-40 seconds (`sleep $((RANDOM % 38 + 3))`). Never rapid-fire.
+- Basic tier: 280 char limit per tweet. Longer takes require threading (yarn-style — reply to yourself).
+- Non-ASCII characters (em-dash, smart quotes, arrows) sometimes 403 silently — keep tweet text ASCII when possible.
