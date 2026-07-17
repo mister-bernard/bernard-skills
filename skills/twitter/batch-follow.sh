@@ -1,14 +1,20 @@
 #!/usr/bin/env bash
-# Follow all accounts in watchlist.json
+# Follow all accounts in watchlist.json (or watchlist.example.json as fallback)
 # Usage: bash skills/twitter/batch-follow.sh [--dry-run]
 set -euo pipefail
 
 SKILL_DIR="$(cd "$(dirname "$0")" && pwd)"
 DRY_RUN="${1:-}"
 
+WATCHLIST="$SKILL_DIR/watchlist.json"
+if [ ! -f "$WATCHLIST" ]; then
+    WATCHLIST="$SKILL_DIR/watchlist.example.json"
+    echo "(no watchlist.json found — using watchlist.example.json as fallback)"
+fi
+
 USERNAMES=$(python3 -c "
 import json
-data = json.load(open('$SKILL_DIR/watchlist.json'))
+data = json.load(open('$WATCHLIST'))
 for a in data['accounts']:
     print(a['username'])
 ")

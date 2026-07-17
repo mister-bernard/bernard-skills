@@ -1,23 +1,25 @@
 # The Crucible — Adversarial Analysis Pipeline
 
-Two modes: **Long Run** (8h local hardware, deep debate) and **Short Run** (cloud models, fast adversarial analysis).
+Two modes: **Long Run** (8h on local hardware, deep debate) and **Short Run** (cloud models, fast adversarial analysis).
+
+The example operator publishes long-run results to [mrb.sh/debates/](https://mrb.sh/debates/) — see the Completed Debates table below for live samples. To run your own copy, set `PUBLISH_BASE_URL` (default: `http://127.0.0.1:3000`) and point it at your own debate-host endpoint.
 
 ## Long Run Crucible
 
-Fully autonomous multi-agent debate on Mac Mini M4 Pro. Three local Ollama models debate for 8 hours, then results are harvested, synthesized, and **published to [mrb.sh/debates/](https://mrb.sh/debates/)**.
+Fully autonomous multi-agent debate on a local box (the example operator uses a Mac Mini M4 Pro). Three local Ollama models debate for 8 hours, then results are harvested, synthesized, and POSTed to your publish endpoint.
 
 **Cost: $0 for debate + ~$0.15 for cloud synthesis + publish.**
 
 ## Short Run Crucible
 
-Fast adversarial analysis using cloud models (Sonnet, etc.) via `sessions_spawn`. Three roles (Adversary → Researcher → Strategist) run sequentially in ~5-10 min. Results **published as GitHub Gists** (not on mrb.sh).
+Fast adversarial analysis using cloud models (Sonnet, etc.) via `sessions_spawn`. Three roles (Adversary → Researcher → Strategist) run sequentially in ~5-10 min. Results **published as GitHub Gists** by default.
 
 **Cost: ~$0.30-1.00 depending on models.**
 
 ### Publishing Rules
 | Mode | Output | Published To |
 |------|--------|-------------|
-| Long Run | Full synthesis report + audio | mrb.sh/debates/ |
+| Long Run | Full synthesis report + audio | `${PUBLISH_BASE_URL}/api/debates/publish` |
 | Short Run | 3 role reports + summary | GitHub Gist |
 
 ## Architecture
@@ -46,8 +48,8 @@ TOPIC + RESEARCH
 │                                              │
 │  1. SCP results from Mac Mini                │
 │  2. Synthesize 2000-3000 word report         │
-│  3. POST to mrb.sh/debates/ API              │
-│  4. Notify G on Telegram with URL            │
+│  3. POST to publish-host /debates/ API       │
+│  4. Notify operator on Telegram with URL     │
 └─────────────────────────────────────────────┘
 ```
 
@@ -59,11 +61,11 @@ TOPIC + RESEARCH
 2. Fetch 1-2 key articles for depth
 3. Save to `projects/crucible-<id>/research-context.md`
 
-### Phase 2: Deploy (~2 min, Bernard main session)
+### Phase 2: Deploy (~2 min, main session)
 
-1. **Register as active debate** on mrb.sh:
+1. **Register as active debate** on the publish host:
    ```bash
-   curl -X POST http://127.0.0.1:3000/api/debates/active \
+   curl -X POST ${PUBLISH_BASE_URL:-http://127.0.0.1:3000}/api/debates/active \
      -H 'Content-Type: application/json' \
      -H 'x-api-key: <MRB_API_KEY>' \
      -d '{"debates":[{
@@ -81,7 +83,7 @@ TOPIC + RESEARCH
        "status":"running"
      }]}'
    ```
-   This shows the debate as "🔴 LIVE" on mrb.sh/debates/ with a progress bar.
+   This shows the debate as "🔴 LIVE" on the publish host's debates page with a progress bar.
 
 2. Generate `debate.py` with:
    - 3 personas (Bull/Bear/Strategist or Adversary/Researcher/Strategist or custom)
@@ -116,7 +118,7 @@ openclaw cron add \
 
 RETRIEVE:
 Run: mkdir -p projects/crucible-<id>/retrieved
-Run: sshpass -p \"$MAC_MINI_PW\" scp -r administrator@38.23.53.65:~/crucible-<id>/* projects/crucible-<id>/retrieved/
+Run: sshpass -p \"$MAC_MINI_PW\" scp -r ${DEBATE_USER}@${DEBATE_HOST}:~/crucible-<id>/* projects/crucible-<id>/retrieved/
 
 CHECK COMPLETION:
 If debate.py is still running (ps aux | grep debate.py), wait 30 min and re-check.
@@ -136,7 +138,7 @@ SYNTHESIZE (use Opus subagent — synthesis model must match or exceed debate qu
    Unresolved Tensions, Novel Insights, Methodology Note, Verdict
 
 PUBLISH:
-POST to http://127.0.0.1:3000/api/debates/publish
+POST to ${PUBLISH_BASE_URL:-http://127.0.0.1:3000}/api/debates/publish
 - Header: x-api-key: <MRB_API_KEY from env>
 - Header: Content-Type: application/json
 - Body: {id, title, content (full synthesis markdown), summary (2-3 sentences),
@@ -147,22 +149,22 @@ GENERATE AUDIO:
 Convert synthesis to podcast audio:
 1. Strip markdown from synthesis.md → /tmp/debate-podcast.txt
 2. Split into ~2000 char chunks at sentence boundaries
-3. Generate WAV per chunk: cat chunk.txt | piper --model /home/openclaw/.local/share/piper/voices/en_US-joe-medium.onnx --output_file chunk.wav
+3. Generate WAV per chunk: cat chunk.txt | piper --model "$PIPER_VOICE_MODEL" --output_file chunk.wav
 4. Concatenate + convert: ffmpeg -f concat -safe 0 -i filelist.txt -c:a aac -b:a 128k /tmp/<id>.m4a
 5. Add audio to debate: bash scripts/add-debate-audio.sh /tmp/<id>.m4a <debate-id>
    (This copies the file, gets duration via ffprobe, updates both the debate JSON and the index with audioUrl + audioDuration)
 
 CLEAR ACTIVE:
-POST to http://127.0.0.1:3000/api/debates/active with x-api-key header.
+POST to ${PUBLISH_BASE_URL:-http://127.0.0.1:3000}/api/debates/active with x-api-key header.
 Body: {\"debates\":[]}  — removes the LIVE indicator from the website.
 
 NOTIFY:
-Send G the URL on Telegram: https://mrb.sh/debates/<id>"
+Send the operator the published URL on their preferred channel."
 ```
 
 ### Phase 5: Verify (optional, manual)
 
-Check [mrb.sh/debates/](https://mrb.sh/debates/) to confirm publication.
+Check `${PUBLISH_BASE_URL}/debates/` to confirm publication. Live example: [mrb.sh/debates/](https://mrb.sh/debates/).
 
 ## Model Requirements
 
@@ -184,9 +186,16 @@ Best debates use different model FAMILIES for genuine reasoning diversity:
 - Qwen vs Llama vs Mistral (local)
 - Or: Grok vs Sonnet vs Gemini (cloud, if budget allows)
 
-## Mac Mini Setup
+## Local-debate Host Setup
 
-- **Host:** `38.23.53.65`, user: `administrator`, auth: `$MAC_MINI_PW` env var
+The example operator runs the debate on a Mac Mini M4 Pro (64GB). Any
+host with comparable RAM and Ollama installed works. Configure via env:
+
+- `DEBATE_HOST` — IP / hostname of the debate machine
+- `DEBATE_USER` — SSH user
+- `MAC_MINI_PW` — SSH password (or use a key — recommended)
+
+Reference setup the example operator uses:
 - **Hardware:** M4 Pro, 64GB RAM — fits 2x 32B models comfortably, or 1x 70B + 1x 32B
 - **Ollama:** `/opt/homebrew/bin/ollama` (must be in PATH for SSH commands)
 - **Python:** 3.9 with `requests` installed
@@ -203,13 +212,13 @@ Best debates use different model FAMILIES for genuine reasoning diversity:
 
 ### To Pull New Models
 ```bash
-sshpass -p "$MAC_MINI_PW" ssh administrator@38.23.53.65 \
+sshpass -p "$MAC_MINI_PW" ssh ${DEBATE_USER}@${DEBATE_HOST} \
   'export PATH=$PATH:/opt/homebrew/bin && ollama pull <model>'
 ```
 
 ## Publishing API
 
-**Endpoint:** `POST http://127.0.0.1:3000/api/debates/publish`
+**Endpoint:** `POST ${PUBLISH_BASE_URL:-http://127.0.0.1:3000}/api/debates/publish`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -287,7 +296,7 @@ Since llama3.1:70b was retired from multi-model debates (too much RAM), the stan
 ### Flow (fully autonomous)
 ```
 Mac Mini debate completes
-  → notify-complete.sh (cron */5) POSTs to https://mrb.sh/api/crucible/complete
+  → notify-complete.sh (cron */5) POSTs to ${PUBLISH_BASE_URL}/api/crucible/complete
   → server writes ~/mrb-sh/data/crucible-completion.json
   → crucible-auto-publish.sh (cron */15) detects new completion
   → pulls summary + final positions + transcript tail from Mac Mini via SCP
@@ -309,10 +318,10 @@ Mac Mini debate completes
 If the auto-pipeline fails, manually synthesize and publish:
 ```bash
 # 1. Pull results from Mac Mini
-scp -r administrator@38.23.53.65:~/crucible/results/<dir>/ /tmp/debate/
+scp -r ${DEBATE_USER}@${DEBATE_HOST}:~/crucible/results/<dir>/ /tmp/debate/
 # 2. Read final positions, write synthesis JSON
 # 3. Publish
-curl -X POST https://mrb.sh/api/debates/publish \
+curl -X POST ${PUBLISH_BASE_URL:-http://127.0.0.1:3000}/api/debates/publish \
   -H "Content-Type: application/json" \
   -H "x-api-key: $MRB_API_KEY" \
   -d @synthesis.json
@@ -329,18 +338,21 @@ The `~/crucible/queue.json` format:
 
 ## Live Status Ping System
 
-Mac Mini runs `~/crucible-ping.py` which pushes status to VPS every 60s:
-- `POST /api/crucible/status` (authenticated, MRB_API_KEY) — receives pings from Mac Mini
+The debate host runs `~/crucible-ping.py` which pushes status to the publish host every 60s:
+- `POST /api/crucible/status` (authenticated, MRB_API_KEY) — receives pings from the debate host
 - `GET /api/crucible/status` (public) — returns current status for website
 - When a suggestion is queued/running, it's auto-removed from suggestions list
-- Progress bar on mrb.sh/debates/ uses `elapsed_hours`/`remaining_hours` from pinger (not browser Date math)
+- Progress bar on the published `/debates/` page uses `elapsed_hours`/`remaining_hours` from pinger (not browser Date math)
 
-## Completed Debates
+## Completed Debates (example operator's instance)
 
-| Date | Topic | ID | Models | Rounds | URL |
-|------|-------|----|----|--------|-----|
-| 2026-02-24 | Black Swan Events & AI Superintelligence | black-swan-ai-2026-02-24 | nous-hermes2-mixtral, dolphin-mixtral, samantha-mistral | 640 | [Link](https://mrb.sh/debates/black-swan-ai-2026-02-24) |
-| 2026-02-24 | Trading Cards ↔ NFTs: Convergence or Collision? | trading-cards-nft-2026-02-24 | qwen2.5:32b, llama3.1:70b, qwen2.5-coder:32b-instruct | 65 | [Link](https://mrb.sh/debates/trading-cards-nft-2026-02-24) |
+These are live on the example operator's deployment as concrete samples
+of long-run output:
+
+| Date | Topic | Models | Rounds | URL |
+|------|-------|--------|--------|-----|
+| 2026-02-24 | Black Swan Events & AI Superintelligence | nous-hermes2-mixtral, dolphin-mixtral, samantha-mistral | 640 | [Link](https://mrb.sh/debates/black-swan-ai-2026-02-24) |
+| 2026-02-24 | Trading Cards ↔ NFTs: Convergence or Collision? | qwen2.5:32b, llama3.1:70b, qwen2.5-coder:32b-instruct | 65 | [Link](https://mrb.sh/debates/trading-cards-nft-2026-02-24) |
 
 ## Short Run Crucible (Detail)
 

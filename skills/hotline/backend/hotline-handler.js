@@ -18,10 +18,10 @@ const formidable = require('formidable').formidable;
 
 // Configuration (set these in your .env)
 const HOTLINE_API_KEY = process.env.HOTLINE_API_KEY || 'YOUR_HOTLINE_API_KEY';
-const HOTLINE_RATE_LIMIT_MS = 5000; // 5 seconds between calls
-const AGENT_ID = 'opus-dm'; // Change to your agent ID
-const REPLY_CHANNEL = 'telegram'; // Change to your channel
-const REPLY_TARGET = 'YOUR_TELEGRAM_CHAT_ID'; // Change to your chat ID
+const HOTLINE_RATE_LIMIT_MS = parseInt(process.env.HOTLINE_RATE_LIMIT_MS || '5000', 10);
+const AGENT_ID = process.env.HOTLINE_AGENT_ID || 'opus-dm';
+const REPLY_CHANNEL = process.env.HOTLINE_REPLY_CHANNEL || 'telegram';
+const REPLY_TARGET = process.env.HOTLINE_REPLY_TARGET || ''; // e.g. Telegram chat id
 
 // Rate limiting map
 const hotlineRateLimit = new Map();
@@ -124,15 +124,15 @@ async function processHotlineAudio(audioFile, location, duration, res) {
     }
     
     // Execute openclaw agent command to deliver to configured target
-    const openclawPath = process.env.OPENCLAW_BIN_PATH || '/home/openclaw/.npm-global/bin/openclaw';
+    const openclawPath = process.env.OPENCLAW_BIN_PATH || 'openclaw';
+    if (!REPLY_TARGET) {
+      console.error('[Hotline] HOTLINE_REPLY_TARGET not set — agent message dropped');
+      return;
+    }
     const cmd = `${openclawPath} agent --agent ${AGENT_ID} --message ${JSON.stringify(agentMessage)} --deliver --reply-channel ${REPLY_CHANNEL} --reply-to ${REPLY_TARGET} --json`;
-    
+
     exec(cmd, {
-      env: { 
-        ...process.env, 
-        HOME: process.env.HOME || '/home/openclaw',
-        PATH: process.env.PATH || '/home/openclaw/.npm-global/bin:/usr/local/bin:/usr/bin:/bin'
-      }
+      env: process.env
     }, (err, stdout, stderr) => {
       if (err) {
         console.error('[Hotline] Agent error:', err.message);

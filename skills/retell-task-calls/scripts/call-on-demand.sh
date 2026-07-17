@@ -3,8 +3,15 @@
 
 set -e
 
-RETELL_API_KEY="${RETELL_API_KEY:-$(grep RETELL_API_KEY ~/.openclaw/.env | cut -d= -f2-)}"
-FROM_NUMBER="+1XXXXXXXXXX"
+ENV_FILE="${OPENCLAW_ENV_FILE:-$HOME/.openclaw/.env}"
+RETELL_API_KEY="${RETELL_API_KEY:-$(grep '^RETELL_API_KEY=' "$ENV_FILE" 2>/dev/null | cut -d= -f2-)}"
+FROM_NUMBER="${RETELL_FROM_NUMBER:-+1XXXXXXXXXX}"
+OPERATOR_NAME="${OPERATOR_NAME:-the operator}"
+
+if [ -z "$RETELL_API_KEY" ]; then
+  echo "ERROR: RETELL_API_KEY not set (in env or $ENV_FILE)" >&2
+  exit 1
+fi
 
 if [ -z "$1" ] || [ -z "$2" ]; then
   echo "Usage: $0 <to_number> <task_description>"
@@ -20,12 +27,12 @@ TASK_DESC="$2"
 echo "=== Creating Retell LLM with conversational prompt ==="
 
 # Generate conversational prompt
-PROMPT="You are Mr. Bernard's AI assistant calling ${TO_NUMBER}.
+PROMPT="You are ${OPERATOR_NAME}'s AI assistant calling ${TO_NUMBER}.
 
 YOUR GOAL: ${TASK_DESC}
 
 HOW TO HAVE THE CONVERSATION:
-1. When someone answers, say: \"Hi, this is Mr. Bernard's assistant. Is this a good time to talk?\"
+1. When someone answers, say: \"Hi, this is ${OPERATOR_NAME}'s assistant. Is this a good time to talk?\"
    Then STOP and wait for them to respond.
 2. If they say yes, explain briefly: \"${TASK_DESC}\"
    Then STOP and wait.
@@ -42,7 +49,7 @@ IMPORTANT:
 LLM_RESPONSE=$(curl -s -X POST "https://api.retellai.com/create-retell-llm" \
   -H "Authorization: Bearer $RETELL_API_KEY" \
   -H "Content-Type: application/json" \
-  -d "{\"model\":\"gpt-4o-mini\",\"general_prompt\":$(echo "$PROMPT" | jq -Rs .)}")
+  -d "{\"model\":\"claude-4.5-haiku\",\"general_prompt\":$(echo "$PROMPT" | jq -Rs .)}")
 
 LLM_ID=$(echo "$LLM_RESPONSE" | jq -r '.llm_id')
 

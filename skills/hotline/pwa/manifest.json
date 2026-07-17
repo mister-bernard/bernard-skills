@@ -1,12 +1,12 @@
 {
-  "name": "Hotline — Mr. Bernard",
+  "name": "Hotline",
   "short_name": "Hotline",
   "start_url": "/hotline/",
   "display": "standalone",
   "background_color": "#0a0a0a",
   "theme_color": "#dc2626",
   "orientation": "portrait",
-  "description": "Instant voice hotline to Mr. Bernard",
+  "description": "Push-to-talk voice hotline to your OpenClaw agent",
   "icons": [
     {
       "src": "/hotline/icon-192.png",

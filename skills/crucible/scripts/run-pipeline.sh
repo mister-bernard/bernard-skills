@@ -12,9 +12,10 @@ TOPIC="${1:?Usage: run-pipeline.sh \"TOPIC\" [ROUNDS] [OUTPUT_DIR]}"
 ROUNDS="${2:-5}"
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 SLUG=$(echo "$TOPIC" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | tr -cd 'a-z0-9-' | head -c 40)
-OUTPUT_DIR="${3:-/home/openclaw/.openclaw/workspace/adversarial-runs/${SLUG}-${TIMESTAMP}}"
+OPENCLAW_WORKSPACE="${OPENCLAW_WORKSPACE:-$HOME/.openclaw/workspace}"
+OUTPUT_DIR="${3:-${OPENCLAW_WORKSPACE}/adversarial-runs/${SLUG}-${TIMESTAMP}}"
 
-SKILL_DIR="/home/openclaw/.openclaw/workspace/skills/adversarial-pipeline/scripts"
+SKILL_DIR="${CRUCIBLE_SKILL_DIR:-${OPENCLAW_WORKSPACE}/skills/adversarial-pipeline/scripts}"
 TRANSCRIPT="${OUTPUT_DIR}/transcript.md"
 SYNTHESIS="${OUTPUT_DIR}/synthesis.md"
 

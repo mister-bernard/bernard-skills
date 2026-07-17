@@ -1,0 +1,26 @@
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+
+# Operator-private state for the Twitter listener (use the .example as starting
+# point and keep your live copies out of git)
+skills/twitter/watchlist.json
+skills/twitter/listener-state.json
+
+# Generated audio/temp files from skills
+skills/suno-music/output/
+*.wav
+*.m4a
+*.mp3
+*.webm
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+*.swp
+*.swo
+.vscode/
+.idea/
