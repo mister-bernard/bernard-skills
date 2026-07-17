@@ -2,6 +2,14 @@
 
 Make one-off phone calls for specific tasks using Retell AI's built-in LLM with custom prompts.
 
+> **2026-07-17 revival notes:** Retell is WORKING again. The 2026-06 "media never bridges"
+> outage was deprecated usage: `gpt-4o-mini` is no longer a valid Retell model and old
+> engine-less agents are dead. Canonical, battle-tested caller (voicemail-after-beep via
+> `voicemail_option`, fast re-delivery, live-tested on real reservation calls):
+> the local `retell-calls` project (retell-call.sh + reservation prompt templates).
+> Use the Retell-managed (Twilio-type) number for outbound — confirm what's provisioned
+> with `GET /list-phone-numbers`; imported SIP-trunk numbers may not bridge inbound.
+
 ## When to Use
 
 - Restaurant reservations
@@ -30,7 +38,7 @@ Make one-off phone calls for specific tasks using Retell AI's built-in LLM with 
 - **From number:** Set via `RETELL_FROM_NUMBER` env var (Retell-native)
 - **Operator name:** Set via `OPERATOR_NAME` env var (used in agent self-introduction)
 - **Agent ID:** Created on-demand (task-specific)
-- **Model:** Always use Retell's built-in LLM (`"model": "gpt-4o-mini"` in create-retell-llm)
+- **Model:** Always use Retell's built-in LLM (`"model": "claude-4.5-haiku"` in create-retell-llm — `gpt-4o-mini` was REMOVED from Retell's model list 2026; using it yields a silently-dead agent)
 - **Cost:** ~$0.07-0.08/min (Retell) + international rates
 
 ## Configuration
@@ -38,7 +46,7 @@ Make one-off phone calls for specific tasks using Retell AI's built-in LLM with 
 **Required in `~/.openclaw/.env` (or `$OPENCLAW_ENV_FILE`):**
 ```bash
 RETELL_API_KEY=YOUR_RETELL_API_KEY
-RETELL_FROM_NUMBER=+1XXXXXXXXXX
+RETELL_FROM_NUMBER=+1XXXXXXXXXX    # your Retell-managed number (check GET /list-phone-numbers)
 OPERATOR_NAME=Your Name        # appears in agent's self-intro
 ```
 
@@ -49,7 +57,7 @@ OPERATOR_NAME=Your Name        # appears in agent's self-intro
 curl -X POST "https://api.retellai.com/create-retell-llm" \
   -H "Authorization: Bearer $RETELL_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"model":"gpt-4o-mini","general_prompt":"<CONVERSATIONAL prompt>"}'
+  -d '{"model":"claude-4.5-haiku","general_prompt":"<CONVERSATIONAL prompt>","start_speaker":"user"}'
 ```
 
 ### Step 2: Create temp agent

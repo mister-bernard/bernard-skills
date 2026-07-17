@@ -49,7 +49,7 @@ IMPORTANT:
 LLM_RESPONSE=$(curl -s -X POST "https://api.retellai.com/create-retell-llm" \
   -H "Authorization: Bearer $RETELL_API_KEY" \
   -H "Content-Type: application/json" \
-  -d "{\"model\":\"gpt-4o-mini\",\"general_prompt\":$(echo "$PROMPT" | jq -Rs .)}")
+  -d "{\"model\":\"claude-4.5-haiku\",\"general_prompt\":$(echo "$PROMPT" | jq -Rs .)}")
 
 LLM_ID=$(echo "$LLM_RESPONSE" | jq -r '.llm_id')
 

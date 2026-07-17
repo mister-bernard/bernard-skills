@@ -5,7 +5,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RETELL_API_KEY="${RETELL_API_KEY:-$(grep RETELL_API_KEY ~/.openclaw/.env | cut -d= -f2)}"
-FROM_NUMBER="+1XXXXXXXXXX"
+FROM_NUMBER="${RETELL_FROM_NUMBER:?set RETELL_FROM_NUMBER to your Retell-managed number}"
 
 if [ $# -lt 4 ]; then
   echo "Usage: $0 <task_name> <to_number> <language_code> <prompt_text> [cleanup:yes/no]"
@@ -86,7 +86,7 @@ echo "$CALL_DETAILS" | jq '{
 if [ "$CLEANUP" = "yes" ]; then
   echo ""
   echo "Cleaning up agent $AGENT_ID..."
-  curl -4 -s -X DELETE "https://api.retellai.com/v2/delete-agent/$AGENT_ID" \
+  curl -4 -s -X DELETE "https://api.retellai.com/delete-agent/$AGENT_ID" \
     -H "Authorization: Bearer $RETELL_API_KEY" > /dev/null
   echo "Agent deleted"
 fi
